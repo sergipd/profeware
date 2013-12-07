@@ -1,0 +1,66 @@
+function onOpen() {
+  // Add a menu with some items, some separators, and a sub-menu.
+  DocumentApp.getUi().createMenu('Combinar')
+      .addItem('Executar', 'combinar')
+      .addSeparator()
+      .addItem('Ajuda', 'ajuda')
+      .addToUi();
+}
+
+
+/**
+ * Shows a message box in the Google Docs editor.
+ */
+function ajuda() {
+  // Displays a dialog box with "Yes" and "No" buttons. Script execution will be
+  // halted until the dialog is dismissed.
+  DocumentApp.getUi().alert(
+      'Ajuda', this.IdFullCalcul,DocumentApp.getUi().ButtonSet.OK);
+}
+
+/**
+ * Shows a custom HTML user interface in a dialog above the Google Docs editor.
+ */
+function combinar() {
+  //var result = DocumentApp.getUi().prompt('Seleccionar origen de les dades',
+  //    'Escriu el ID del full de càlcul:', DocumentApp.getUi().ButtonSet.OK_CANCEL);
+
+  var files = DocsList.getFilesByType('spreadsheet');
+  var ss = SpreadsheetApp.open(files[0]);
+  
+  var sheet = ss.getSheets()[0];
+  var result = DocumentApp.getUi().prompt('Nom del fitxer',
+      'Escriu el nom del fitxer que vols crear:', DocumentApp.getUi().ButtonSet.OK_CANCEL);
+   if (result.getSelectedButton() == DocumentApp.getUi().Button.OK) {
+    var docfile = DocsList.getFileById(DocumentApp.getActiveDocument().getId()).makeCopy(result.getResponseText());
+    var doc = DocumentApp.openById(docfile.getId());
+    var i=0;
+    while(doc.getBody().getText().indexOf("{",i)>0)
+    {
+      var paraula_clau=doc.getBody().getText().substring(doc.getBody().getText().indexOf("{",i)+1,doc.getBody().getText().indexOf("}",i));
+      var substitucio="";
+      var row=1;
+      var range = sheet.getDataRange();
+      while(row<=range.getHeight()){
+        var col=1;
+        while(col<=range.getWidth())
+        {
+          var cell = range.getCell(row,col);
+          if(cell.getValue()==paraula_clau){
+            substitucio=range.getCell(row,col+1).getValue();
+            doc.getBody().replaceText("{"+paraula_clau+"}", substitucio);
+            col=range.getWidth();
+            row=range.getHeight();
+          }
+          col++;
+         }
+        row++;
+      }
+      i=i+paraula_clau.length;
+     }
+  }
+  doc.saveAndClose();
+}
+
+
+
